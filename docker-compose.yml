@@ -42,7 +42,7 @@ x-init-ollama: &init-ollama
     - ollama_storage:/root/.ollama
   entrypoint: /bin/sh
   environment:
-    - OLLAMA_HOST=ollama:11434
+    - OLLAMA_HOST=ollama:11435
   command:
     - "-c"
     - "sleep 3; ollama pull llama3.2"
@@ -84,8 +84,14 @@ services:
     hostname: n8n
     container_name: n8n
     restart: unless-stopped
-    ports:
-      - 5678:5678
+    expose:
+      - '5678'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5678 || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/demo-data:/demo-data
@@ -95,6 +101,21 @@ services:
         condition: service_healthy
       n8n-import:
         condition: service_completed_successfully
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PROTOCOL=https
+
+  caddy:
+    image: caddy/caddy:latest
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+    networks:
+      - demo
 
   qdrant:
     image: qdrant/qdrant
@@ -147,4 +168,4 @@ services:
     <<: *init-ollama
     image: ollama/ollama:rocm
     depends_on:
-     - ollama-gpu-amd
+      - ollama-gpu-amd
