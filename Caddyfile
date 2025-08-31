@@ -1,6 +1,9 @@
 # Caddyfile
 # Replace FQDN with your own n8n.<yourdomain>.com
-n8n.trainingfoundry.ai {
-    reverse_proxy n8n:5678
-}
 
+n8n.trainingfoundry.ai {
+  reverse_proxy n8n:5678 {
+    header_up Host {host}
+    header_up X-Forwarded-Proto https
+  }
+}
